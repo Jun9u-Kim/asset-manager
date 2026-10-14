@@ -17,10 +17,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -156,23 +156,22 @@ fun EconomyNewsScreen() {
     }
 
     if (editingTags) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { editingTags = false },
-            title = { Text("관심 경제 태그") },
+            title = { AppDialogHeader("관심 경제 태그", "관심 주제를 쉼표로 나누어 입력하세요") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("관심 키워드를 쉼표로 구분해 입력하세요. 예: 반도체, 금리, 부동산")
                     OutlinedTextField(
                         value = tagInput,
                         onValueChange = { tagInput = it },
-                        label = { Text("관심 태그") },
+                        label = { Text("관심 키워드") },
                         placeholder = { Text("반도체, 금리, 부동산") },
                         singleLine = false,
                     )
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                Button(onClick = {
                     val updatedTags = tagInput.split(',', '\n').map(String::trim).filter(String::isNotBlank).distinctBy(String::lowercase)
                     preferences.edit().putStringSet("tags", updatedTags.toSet()).apply()
                     tags = updatedTags

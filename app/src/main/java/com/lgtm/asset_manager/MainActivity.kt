@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -53,14 +55,15 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Article
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -79,6 +82,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -96,6 +100,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -442,9 +447,9 @@ fun Asset_ManagerApp(
 
             pendingWorkbookImport?.let { imported ->
                 val importedCount = imported.assets.size + imported.budget.size
-                AlertDialog(
+                AppAlertDialog(
                     onDismissRequest = { pendingWorkbookImport = null },
-                    title = { Text("Excel 데이터 가져오기") },
+                    title = { AppDialogHeader("Excel 데이터 가져오기", "가져올 항목을 확인하세요", Icons.Default.Article) },
                     text = {
                         Text(
                             if (importedCount == 0) {
@@ -455,7 +460,7 @@ fun Asset_ManagerApp(
                         )
                     },
                     confirmButton = {
-                        TextButton(
+                        Button(
                             enabled = importedCount > 0,
                             onClick = {
                                 viewModel.importRecords(imported.assets)
@@ -715,12 +720,12 @@ fun CategorySection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { expanded = !expanded },
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.CenterStart,
                 ) {
                     CategoryChip(category = category, large = true)
                 }
@@ -943,7 +948,7 @@ fun CategoryChip(category: String, large: Boolean = false) {
             Text(
                 text = category,
                 fontSize = if (large) 15.sp else 12.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
                 color = textColor,
             )
         }
@@ -957,19 +962,17 @@ fun DeleteConfirmationDialog(
     onDismiss: () -> Unit,
     onConfirmDelete: () -> Unit,
 ) {
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(
-                text = "자산 내역 삭제",
-                fontWeight = FontWeight.Bold,
+            AppDialogHeader(
+                title = "자산 내역 삭제",
+                subtitle = "[${record.category}] ${record.name}",
+                icon = Icons.Default.Delete,
+                destructive = true,
             )
         },
-        text = {
-            Text(
-                text = "[${record.category}] ${record.name} 내역을 정말 삭제하시겠습니까?",
-            )
-        },
+        text = { Text("삭제한 내역은 복구할 수 없습니다.") },
         confirmButton = {
             Button(
                 onClick = onConfirmDelete,
@@ -981,7 +984,7 @@ fun DeleteConfirmationDialog(
             }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss) {
                 Text("취소")
             }
         },
@@ -1007,33 +1010,14 @@ fun EditAssetHistoryDialog(
     val currencyFormat = remember { NumberFormat.getNumberInstance(Locale.KOREA) }
     val dateFormat = remember { SimpleDateFormat("yyyy.MM.dd", Locale.KOREA) }
 
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column {
-                    Text(
-                        text = "자산 이력 편집",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CategoryChip(category = category)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = name,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
+            AppDialogHeader(
+                title = "자산 이력 편집",
+                subtitle = "[${category}] ${name}",
+                icon = Icons.Default.DateRange,
+            )
         },
         text = {
             Column(
@@ -1224,7 +1208,7 @@ fun HistoryRecordRow(
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "이력 삭제",
-                            tint = MaterialTheme.colorScheme.error,
+                            tint = Color.Black,
                             modifier = Modifier.height(20.dp),
                         )
                     }
@@ -1291,12 +1275,13 @@ fun AddHistoryRecordDialog(
 
     val dateFormat = remember { SimpleDateFormat("yyyy년 MM월 dd일", Locale.KOREA) }
 
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(
-                text = "이전 날짜 내역 추가",
-                fontWeight = FontWeight.Bold,
+            AppDialogHeader(
+                title = "이전 날짜 내역 추가",
+                subtitle = "[${category}] ${name}",
+                icon = Icons.Default.Add,
             )
         },
         text = {
@@ -1304,12 +1289,6 @@ fun AddHistoryRecordDialog(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    text = "자산: [$category] $name",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
                 // Date Selection
                 Box {
                     OutlinedTextField(
@@ -1440,12 +1419,13 @@ fun AddRecordDialog(
 
     val isInputValid = selectedCategory.isNotBlank() && selectedName.isNotBlank() && valueText.isNotBlank()
 
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(
-                text = "자산 내역 추가",
-                fontWeight = FontWeight.Bold,
+            AppDialogHeader(
+                title = "자산 내역 추가",
+                subtitle = "자산의 금액과 기준일을 입력하세요",
+                icon = Icons.Default.AccountBalanceWallet,
             )
         },
         text = {
@@ -1471,6 +1451,9 @@ fun AddRecordDialog(
                     ExposedDropdownMenu(
                         expanded = categoryDropdownExpanded,
                         onDismissRequest = { categoryDropdownExpanded = false },
+                        shape = RoundedCornerShape(16.dp),
+                        containerColor = Color.White,
+                        tonalElevation = 0.dp,
                     ) {
                         categoryList.forEach { category ->
                             DropdownMenuItem(
@@ -1517,6 +1500,9 @@ fun AddRecordDialog(
                     ExposedDropdownMenu(
                         expanded = nameDropdownExpanded,
                         onDismissRequest = { nameDropdownExpanded = false },
+                        shape = RoundedCornerShape(16.dp),
+                        containerColor = Color.White,
+                        tonalElevation = 0.dp,
                     ) {
                         nameList.forEach { name ->
                             DropdownMenuItem(
@@ -1606,9 +1592,9 @@ fun AddRecordDialog(
 
     // Sub-dialog to add a custom Category
     if (showAddCategoryDialog) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showAddCategoryDialog = false },
-            title = { Text("새 카테고리 추가") },
+            title = { AppDialogHeader("새 카테고리 추가", "분류 이름을 입력하세요", Icons.Default.Category) },
             text = {
                 OutlinedTextField(
                     value = customCategoryText,
@@ -1637,7 +1623,7 @@ fun AddRecordDialog(
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showAddCategoryDialog = false }) {
+                TextButton(onClick = { showAddCategoryDialog = false }) {
                     Text("취소")
                 }
             },
@@ -1646,9 +1632,9 @@ fun AddRecordDialog(
 
     // Sub-dialog to add a custom Name
     if (showAddNameDialog) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showAddNameDialog = false },
-            title = { Text("새 이름 추가") },
+            title = { AppDialogHeader("새 자산 이름 추가", "항목을 구분할 이름을 입력하세요", Icons.Default.Edit) },
             text = {
                 OutlinedTextField(
                     value = customNameText,
@@ -1677,7 +1663,7 @@ fun AddRecordDialog(
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showAddNameDialog = false }) {
+                TextButton(onClick = { showAddNameDialog = false }) {
                     Text("취소")
                 }
             },
@@ -1900,26 +1886,40 @@ fun StatsScreen(records: List<AssetRecord>, allRecords: List<AssetRecord>) {
                     }
                 }
 
-                FilterChip(
-                    selected = showAssetDetails,
+                Surface(
                     onClick = { showAssetDetails = !showAssetDetails },
-                    label = { Text("세부 자산 항목 표시") },
-                    leadingIcon = if (showAssetDetails) {
-                        {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Text(
+                                text = "세부 자산 항목 표시",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = "카테고리별 자산과 비율을 확인합니다",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                    } else null,
-                )
-                if (showAssetDetails) {
-                    Text(
-                        text = "세부 항목의 비율은 각 카테고리 내부 기준입니다.",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
+                        Switch(
+                            checked = showAssetDetails,
+                            onCheckedChange = { showAssetDetails = it },
+                            modifier = Modifier.scale(0.82f),
+                        )
+                    }
                 }
 
                 // Canvas Donut Chart
@@ -1964,6 +1964,14 @@ fun StatsScreen(records: List<AssetRecord>, allRecords: List<AssetRecord>) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                }
+
+                if (showAssetDetails) {
+                    Text(
+                        text = "세부 항목의 비율은 각 카테고리 내부 기준입니다.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
                 }
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
@@ -2020,49 +2028,103 @@ fun StatsScreen(records: List<AssetRecord>, allRecords: List<AssetRecord>) {
                             }
                         } else {
                             val categorySlices = donutSlices.filter { it.category == category && it.value > 0 }
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
+                            val positiveCategoryTotal = categorySlices.sumOf { it.value }
+
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(14.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
                                 ) {
-                                    Text(category, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                    Text(
-                                        "${currencyFormat.format(categorySum)} 원 (${String.format(Locale.KOREA, "%.1f", categoryPercentage)}%)",
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.outline,
-                                    )
-                                }
-                                val positiveCategoryTotal = categorySlices.sumOf { it.value }
-                                categorySlices.forEach { slice ->
-                                    val withinCategoryPercentage = if (positiveCategoryTotal > 0) {
-                                        slice.value.toDouble() / positiveCategoryTotal * 100
-                                    } else 0.0
                                     Row(
-                                        modifier = Modifier.fillMaxWidth().padding(start = 12.dp),
+                                        modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
                                         Row(
+                                            modifier = Modifier.weight(1f),
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         ) {
                                             Box(
                                                 modifier = Modifier
                                                     .size(10.dp)
-                                                    .background(slice.color, shape = RoundedCornerShape(2.dp)),
+                                                    .background(categoryColor, shape = RoundedCornerShape(3.dp)),
                                             )
-                                            Text(slice.name ?: "이름 없음", fontSize = 13.sp)
+                                            Text(
+                                                text = category,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                            )
                                         }
-                                        Text(
-                                            "${currencyFormat.format(slice.value)} 원 (${String.format(Locale.KOREA, "%.1f", withinCategoryPercentage)}%)",
-                                            fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
+                                        Column(horizontalAlignment = Alignment.End) {
+                                            Text(
+                                                text = "${currencyFormat.format(categorySum)} 원",
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                textAlign = TextAlign.End,
+                                            )
+                                            Text(
+                                                text = "${String.format(Locale.KOREA, "%.1f", categoryPercentage)}%",
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.outline,
+                                                textAlign = TextAlign.End,
+                                            )
+                                        }
+                                    }
+
+                                    if (categorySlices.isNotEmpty()) {
+                                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                    }
+
+                                    categorySlices.forEach { slice ->
+                                        val withinCategoryPercentage = if (positiveCategoryTotal > 0) {
+                                            slice.value.toDouble() / positiveCategoryTotal * 100
+                                        } else 0.0
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.weight(1f),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(8.dp)
+                                                        .background(slice.color, shape = RoundedCornerShape(2.dp)),
+                                                )
+                                                Text(
+                                                    text = slice.name ?: "이름 없음",
+                                                    fontSize = 13.sp,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                            }
+                                            Column(horizontalAlignment = Alignment.End) {
+                                                Text(
+                                                    text = "${currencyFormat.format(slice.value)} 원",
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    textAlign = TextAlign.End,
+                                                )
+                                                Text(
+                                                    text = "${String.format(Locale.KOREA, "%.1f", withinCategoryPercentage)}%",
+                                                    fontSize = 11.sp,
+                                                    color = MaterialTheme.colorScheme.outline,
+                                                    textAlign = TextAlign.End,
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
-                        }
+
                     }
                 }
             }
@@ -2078,6 +2140,7 @@ fun StatsScreen(records: List<AssetRecord>, allRecords: List<AssetRecord>) {
                 showDonutDatePicker = false
             },
         )
+    }
     }
 }
 
@@ -2131,9 +2194,21 @@ fun AssetDatePickerDialog(
         }.timeInMillis
     }
     val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialUtcMillis)
+    val pickerColors = DatePickerDefaults.colors(
+        containerColor = Color.White,
+        selectedDayContainerColor = MaterialTheme.colorScheme.primary,
+        selectedDayContentColor = MaterialTheme.colorScheme.onPrimary,
+        selectedYearContainerColor = MaterialTheme.colorScheme.primary,
+        selectedYearContentColor = MaterialTheme.colorScheme.onPrimary,
+        todayContentColor = MaterialTheme.colorScheme.primary,
+        todayDateBorderColor = MaterialTheme.colorScheme.primary,
+    )
 
     DatePickerDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        tonalElevation = 0.dp,
+        colors = pickerColors,
         confirmButton = {
             TextButton(
                 onClick = {
@@ -2166,6 +2241,7 @@ fun AssetDatePickerDialog(
         DatePicker(
             state = pickerState,
             showModeToggle = false,
+            colors = pickerColors,
             title = {
                 Text(
                     text = "날짜 선택",
@@ -2257,6 +2333,7 @@ fun generateChartSlots(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AssetLineChartCard(
     allRecords: List<AssetRecord>,
@@ -2307,6 +2384,7 @@ fun AssetLineChartCard(
         mutableStateOf(chartPreferences.getBoolean("show_total_line", true))
     }
     var chartSeriesOptionsExpanded by rememberSaveable { mutableStateOf(false) }
+    var expandedChartCategory by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(activeItems, showTotalLine, knownItemKeys) {
         if (knownItemKeys.isEmpty()) return@LaunchedEffect
@@ -2395,7 +2473,7 @@ fun AssetLineChartCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(horizontal = 12.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -2520,108 +2598,152 @@ fun AssetLineChartCard(
                 }
 
                 if (chartSeriesOptionsExpanded) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    FilterChip(
-                        selected = showTotalLine,
-                        onClick = { showTotalLine = !showTotalLine },
-                        label = {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
                             Text(
                                 text = "전체 합계 그래프",
-                                fontWeight = if (showTotalLine) FontWeight.Bold else FontWeight.Normal,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
                             )
-                        },
-                        leadingIcon = if (showTotalLine) {
-                            {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                )
-                            }
-                        } else null,
-                    )
-                }
-
-                categoryToItemsMap.forEach { (category, items) ->
-                    val categoryItems = items.map { name -> ChartItemKey(category, name) }
-                    val allCategoryActive = categoryItems.all { it in activeItems }
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Surface(
-                            onClick = {
-                                activeItems = if (allCategoryActive) {
-                                    activeItems - categoryItems.toSet()
-                                } else {
-                                    activeItems + categoryItems.toSet()
-                                }
-                            },
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (allCategoryActive) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                CategoryChip(category = category)
-                                Text(
-                                    text = category,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (allCategoryActive) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-
-                        items.forEach { itemName ->
-                            val itemKey = ChartItemKey(category, itemName)
-                            val isSelected = itemKey in activeItems
-                            val chipColor = itemColorMap[itemKey] ?: primaryColor
-
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = {
-                                    activeItems = if (isSelected) {
-                                        activeItems - itemKey
-                                    } else {
-                                        activeItems + itemKey
-                                    }
-                                },
-                                label = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(10.dp)
-                                                .background(
-                                                    color = if (isSelected) chipColor else chipColor.copy(alpha = 0.4f),
-                                                    shape = RoundedCornerShape(2.dp),
-                                                ),
-                                        )
-                                        Text(
-                                            text = itemName,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                        )
-                                    }
-                                },
+                            Switch(
+                                checked = showTotalLine,
+                                onCheckedChange = { showTotalLine = it },
+                                modifier = Modifier.scale(0.7f),
                             )
                         }
                     }
-                }
+
+                    categoryToItemsMap.forEach { (category, items) ->
+                        val categoryItems = items.map { name -> ChartItemKey(category, name) }
+                        val selectedCount = categoryItems.count { it in activeItems }
+                        val allCategoryActive = selectedCount == categoryItems.size
+                        val categoryExpanded = expandedChartCategory == category
+
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(14.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(
+                                            text = category,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                        Switch(
+                                            checked = allCategoryActive,
+                                            onCheckedChange = { checked ->
+                                                activeItems = if (checked) {
+                                                    activeItems + categoryItems.toSet()
+                                                } else {
+                                                    activeItems - categoryItems.toSet()
+                                                }
+                                            },
+                                            modifier = Modifier.scale(0.7f),
+                                        )
+                                    }
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                expandedChartCategory = if (categoryExpanded) null else category
+                                            }
+                                            .padding(vertical = 6.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(
+                                            text = "$selectedCount/${categoryItems.size}개 표시",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                        ) {
+                                            Text(
+                                                text = if (categoryExpanded) "항목 접기" else "항목 펼치기",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                            Icon(
+                                                imageVector = if (categoryExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (categoryExpanded) {
+                            FlowRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(0.dp),
+                            ) {
+                                items.forEach { itemName ->
+                                    val itemKey = ChartItemKey(category, itemName)
+                                    val isSelected = itemKey in activeItems
+                                    val chipColor = itemColorMap[itemKey] ?: primaryColor
+
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = {
+                                            activeItems = if (isSelected) {
+                                                activeItems - itemKey
+                                            } else {
+                                                activeItems + itemKey
+                                            }
+                                        },
+                                        label = {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(10.dp)
+                                                        .background(
+                                                            color = if (isSelected) chipColor else chipColor.copy(alpha = 0.4f),
+                                                            shape = RoundedCornerShape(2.dp),
+                                                        ),
+                                                )
+                                                Text(
+                                                    text = itemName,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                )
+                                            }
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -2634,8 +2756,8 @@ fun AssetLineChartCard(
                     .height(220.dp),
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
-                    val paddingLeft = 68.dp.toPx()
-                    val paddingRight = 12.dp.toPx()
+                    val paddingLeft = 56.dp.toPx()
+                    val paddingRight = 8.dp.toPx()
                     val paddingTop = 20.dp.toPx()
                     val paddingBottom = 30.dp.toPx()
 

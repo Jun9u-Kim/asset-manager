@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -240,14 +241,19 @@ fun BudgetScreen(
         BudgetEntryDialog(entry.day, entries, assetRecords, entry, onDismiss = { entryToEdit = null }, onSave = { updated -> onUpdate(updated); entryToEdit = null })
     }
     entryToDelete?.let { entry ->
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { entryToDelete = null },
-            title = { Text("가계부 항목 삭제", fontWeight = FontWeight.Bold) },
-            text = { Text("[${entry.category}] ${entry.title} · ${NumberFormat.getNumberInstance(Locale.KOREA).format(entry.amount)}원을 삭제할까요?") },
+            title = {
+                AppDialogHeader(
+                    title = "가계부 항목 삭제",
+                    subtitle = "[${entry.category}] ${entry.title}",
+                    icon = Icons.Default.Delete,
+                    destructive = true,
+                )
+            },
+            text = { Text("${NumberFormat.getNumberInstance(Locale.KOREA).format(entry.amount)}원 내역을 삭제할까요?") },
             confirmButton = {
-                TextButton(onClick = { onDelete(entry); entryToDelete = null }) {
-                    Text("삭제", color = MaterialTheme.colorScheme.error)
-                }
+                Button(onClick = { onDelete(entry); entryToDelete = null }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text("삭제") }
             },
             dismissButton = { TextButton(onClick = { entryToDelete = null }) { Text("취소") } },
         )
@@ -316,33 +322,14 @@ private fun BudgetEntryDialog(day: Int, entries: List<ExpenseEntry>, assetRecord
     var showEntryDatePicker by remember { mutableStateOf(false) }
     val validAmount = amountText.toLongOrNull()?.takeIf { it > 0 }
     val date = selectedEntryDay.toString()
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Surface(
-                    modifier = Modifier.size(44.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.DateRange, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    }
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        "${date.substring(4, 6)}월 ${date.substring(6, 8)}일 내역",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        if (initialEntry == null) "새 항목 추가" else "항목 편집",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
+            AppDialogHeader(
+                title = "${date.substring(4, 6)}월 ${date.substring(6, 8)}일 내역",
+                subtitle = if (initialEntry == null) "가계부에 새 항목을 추가합니다" else "기록 내용을 수정합니다",
+                icon = Icons.Default.DateRange,
+            )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -373,7 +360,13 @@ private fun BudgetEntryDialog(day: Int, entries: List<ExpenseEntry>, assetRecord
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
                         modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true).fillMaxWidth(),
                     )
-                    ExposedDropdownMenu(expanded = categoryExpanded, onDismissRequest = { categoryExpanded = false }) {
+                    ExposedDropdownMenu(
+                        expanded = categoryExpanded,
+                        onDismissRequest = { categoryExpanded = false },
+                        shape = RoundedCornerShape(16.dp),
+                        containerColor = Color.White,
+                        tonalElevation = 0.dp,
+                    ) {
                         categoryOptions.forEach { option -> DropdownMenuItem(text = { Text(option) }, onClick = { category = option; categoryExpanded = false }) }
                         if (type != "저축") {
                             HorizontalDivider()
@@ -390,7 +383,13 @@ private fun BudgetEntryDialog(day: Int, entries: List<ExpenseEntry>, assetRecord
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = titleExpanded) },
                         modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true).fillMaxWidth(),
                     )
-                    ExposedDropdownMenu(expanded = titleExpanded, onDismissRequest = { titleExpanded = false }) {
+                    ExposedDropdownMenu(
+                        expanded = titleExpanded,
+                        onDismissRequest = { titleExpanded = false },
+                        shape = RoundedCornerShape(16.dp),
+                        containerColor = Color.White,
+                        tonalElevation = 0.dp,
+                    ) {
                         titleOptions.forEach { option -> DropdownMenuItem(text = { Text(option) }, onClick = { title = option; titleExpanded = false }) }
                         HorizontalDivider()
                         DropdownMenuItem(text = { Text("+ 새 항목명 추가...", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }, onClick = { titleExpanded = false; newTitle = ""; showAddTitle = true })
@@ -412,7 +411,7 @@ private fun BudgetEntryDialog(day: Int, entries: List<ExpenseEntry>, assetRecord
                 }
             }
         },
-        confirmButton = { TextButton(enabled = category.isNotBlank() && title.isNotBlank() && validAmount != null, onClick = { validAmount?.let { onSave(ExpenseEntry(id = initialEntry?.id ?: 0, day = selectedEntryDay, type = type, category = category, title = title.trim(), amount = it, memo = memo.trim(), includeInAssets = type == "저축" && includeInAssets, includeInFutureAssets = type == "저축" && includeInAssets && includeInFutureAssets)) } }) { Text("저장") } },
+        confirmButton = { Button(enabled = category.isNotBlank() && title.isNotBlank() && validAmount != null, onClick = { validAmount?.let { onSave(ExpenseEntry(id = initialEntry?.id ?: 0, day = selectedEntryDay, type = type, category = category, title = title.trim(), amount = it, memo = memo.trim(), includeInAssets = type == "저축" && includeInAssets, includeInFutureAssets = type == "저축" && includeInAssets && includeInFutureAssets)) } }) { Text("저장") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
     )
     if (showEntryDatePicker) {
@@ -431,9 +430,9 @@ private fun BudgetEntryDialog(day: Int, entries: List<ExpenseEntry>, assetRecord
         )
     }
     if (showAddCategory) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showAddCategory = false },
-            title = { Text("새 카테고리 추가") },
+            title = { AppDialogHeader("새 카테고리 추가", "가계부 분류를 입력하세요", Icons.Default.Category) },
             text = { OutlinedTextField(newCategory, { newCategory = it }, label = { Text("카테고리명") }, singleLine = true) },
             confirmButton = {
                 TextButton(enabled = newCategory.isNotBlank(), onClick = {
@@ -446,9 +445,9 @@ private fun BudgetEntryDialog(day: Int, entries: List<ExpenseEntry>, assetRecord
         )
     }
     if (showAddTitle) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showAddTitle = false },
-            title = { Text("새 항목명 추가") },
+            title = { AppDialogHeader("새 항목명 추가", "항목 이름을 입력하세요", Icons.Default.Edit) },
             text = { OutlinedTextField(newTitle, { newTitle = it }, label = { Text("항목명") }, singleLine = true) },
             confirmButton = {
                 TextButton(enabled = newTitle.isNotBlank(), onClick = {

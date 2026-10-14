@@ -43,13 +43,14 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.DirectionsCar
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Article
@@ -922,36 +923,127 @@ fun AssetRecordCard(
 
 @Composable
 fun CategoryChip(category: String, large: Boolean = false) {
-    val (backgroundColor, textColor, categoryIcon) = when (category) {
-        "부동산" -> Triple(Color(0xFFFCE8E7), Color(0xFF9F3030), Icons.Default.Home)
-        "금" -> Triple(Color(0xFFF5F1EC), Color(0xFF6B4F3A), Icons.Default.Star)
-        "자동차" -> Triple(Color(0xFFF0F0F0), Color(0xFF303030), Icons.Default.DirectionsCar)
-        "입출금" -> Triple(Color(0xFFF8EEEE), Color(0xFF7D2632), Icons.Default.AccountBalanceWallet)
-        else -> Triple(Color(0xFFF1F1F1), Color(0xFF505050), Icons.Default.Category)
+    val backgroundColor: Color
+    val textColor: Color
+    val categoryIcon: ImageVector?
+    when (category) {
+        "부동산" -> {
+            backgroundColor = Color(0xFFF5F1EF)
+            textColor = Color(0xFF72564D)
+            categoryIcon = Icons.Outlined.Home
+        }
+        "금" -> {
+            backgroundColor = Color(0xFFF6F3E9)
+            textColor = Color(0xFF806A32)
+            categoryIcon = null
+        }
+        "자동차" -> {
+            backgroundColor = Color(0xFFEEF2F5)
+            textColor = Color(0xFF526779)
+            categoryIcon = Icons.Outlined.DirectionsCar
+        }
+        "입출금" -> {
+            backgroundColor = Color(0xFFEEF3F1)
+            textColor = Color(0xFF4E6C60)
+            categoryIcon = Icons.Outlined.AccountBalanceWallet
+        }
+        else -> {
+            backgroundColor = Color(0xFFF1F2F4)
+            textColor = Color(0xFF5C6571)
+            categoryIcon = Icons.Outlined.Category
+        }
     }
 
     Surface(
-        shape = RoundedCornerShape(50),
+        shape = RoundedCornerShape(if (large) 16.dp else 13.dp),
         color = backgroundColor,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = if (large) 12.dp else 8.dp, vertical = if (large) 8.dp else 5.dp),
+            modifier = Modifier.padding(horizontal = if (large) 8.dp else 6.dp, vertical = if (large) 6.dp else 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(if (large) 8.dp else 5.dp),
+            horizontalArrangement = Arrangement.spacedBy(if (large) 9.dp else 6.dp),
         ) {
-            Icon(
-                imageVector = categoryIcon,
-                contentDescription = null,
-                modifier = Modifier.size(if (large) 20.dp else 14.dp),
-                tint = textColor,
-            )
+            Box(
+                modifier = Modifier
+                    .size(if (large) 34.dp else 24.dp)
+                    .background(Color.White.copy(alpha = 0.78f), RoundedCornerShape(if (large) 11.dp else 8.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (categoryIcon == null) {
+                    GoldIngotIcon(
+                        modifier = Modifier.size(if (large) 19.dp else 15.dp),
+                        tint = textColor,
+                    )
+                } else {
+                    Icon(
+                        imageVector = categoryIcon,
+                        contentDescription = null,
+                        modifier = Modifier.size(if (large) 19.dp else 15.dp),
+                        tint = textColor,
+                    )
+                }
+            }
             Text(
                 text = category,
-                fontSize = if (large) 15.sp else 12.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = if (large) 14.sp else 12.sp,
+                fontWeight = FontWeight.SemiBold,
                 color = textColor,
+                maxLines = 1,
             )
         }
+    }
+}
+
+@Composable
+private fun GoldIngotIcon(modifier: Modifier = Modifier, tint: Color) {
+    Canvas(modifier = modifier) {
+        val sx = size.width / 24f
+        val sy = size.height / 24f
+        fun point(x: Float, y: Float) = Offset(x * sx, y * sy)
+
+        val outline = Path().apply {
+            moveTo(point(3f, 8f).x, point(3f, 8f).y)
+            lineTo(point(7f, 4f).x, point(7f, 4f).y)
+            lineTo(point(17f, 4f).x, point(17f, 4f).y)
+            lineTo(point(21f, 8f).x, point(21f, 8f).y)
+            lineTo(point(18f, 19f).x, point(18f, 19f).y)
+            lineTo(point(6f, 19f).x, point(6f, 19f).y)
+            close()
+        }
+        val topFace = Path().apply {
+            moveTo(point(3f, 8f).x, point(3f, 8f).y)
+            lineTo(point(7f, 4f).x, point(7f, 4f).y)
+            lineTo(point(17f, 4f).x, point(17f, 4f).y)
+            lineTo(point(21f, 8f).x, point(21f, 8f).y)
+            close()
+        }
+        val leftFacet = Path().apply {
+            moveTo(point(3f, 8f).x, point(3f, 8f).y)
+            lineTo(point(7f, 8f).x, point(7f, 8f).y)
+            lineTo(point(8f, 18f).x, point(8f, 18f).y)
+            lineTo(point(6f, 19f).x, point(6f, 19f).y)
+            close()
+        }
+        val rightFacet = Path().apply {
+            moveTo(point(17f, 8f).x, point(17f, 8f).y)
+            lineTo(point(21f, 8f).x, point(21f, 8f).y)
+            lineTo(point(18f, 19f).x, point(18f, 19f).y)
+            lineTo(point(16f, 18f).x, point(16f, 18f).y)
+            close()
+        }
+        drawPath(outline, tint.copy(alpha = 0.10f))
+        drawPath(topFace, tint.copy(alpha = 0.3f))
+        drawPath(leftFacet, tint.copy(alpha = 0.16f))
+        drawPath(rightFacet, tint.copy(alpha = 0.2f))
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(
+            width = 1.4.dp.toPx(),
+            cap = StrokeCap.Round,
+            join = androidx.compose.ui.graphics.StrokeJoin.Round,
+        )
+        drawPath(outline, tint, style = stroke)
+        drawLine(tint, point(3.5f, 8f), point(20.5f, 8f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+        drawLine(tint.copy(alpha = 0.75f), point(7f, 8.5f), point(8f, 18f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+        drawLine(tint.copy(alpha = 0.75f), point(17f, 8.5f), point(16f, 18f), strokeWidth = stroke.width, cap = StrokeCap.Round)
     }
 }
 

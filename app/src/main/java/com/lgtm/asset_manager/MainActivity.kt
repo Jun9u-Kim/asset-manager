@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -706,9 +707,10 @@ fun CategorySection(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            containerColor = Color(0xFFFCFCFD),
         ),
         shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)),
     ) {
         Column(
             modifier = Modifier
@@ -755,7 +757,9 @@ fun CategorySection(
                 )
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+            if (expanded) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+            }
 
             // Asset records under this category
             if (expanded) {
@@ -923,74 +927,55 @@ fun AssetRecordCard(
 
 @Composable
 fun CategoryChip(category: String, large: Boolean = false) {
-    val backgroundColor: Color
     val textColor: Color
     val categoryIcon: ImageVector?
     when (category) {
         "부동산" -> {
-            backgroundColor = Color(0xFFF5F1EF)
             textColor = Color(0xFF72564D)
             categoryIcon = Icons.Outlined.Home
         }
         "금" -> {
-            backgroundColor = Color(0xFFF6F3E9)
             textColor = Color(0xFF806A32)
             categoryIcon = null
         }
         "자동차" -> {
-            backgroundColor = Color(0xFFEEF2F5)
             textColor = Color(0xFF526779)
             categoryIcon = Icons.Outlined.DirectionsCar
         }
         "입출금" -> {
-            backgroundColor = Color(0xFFEEF3F1)
             textColor = Color(0xFF4E6C60)
             categoryIcon = Icons.Outlined.AccountBalanceWallet
         }
         else -> {
-            backgroundColor = Color(0xFFF1F2F4)
             textColor = Color(0xFF5C6571)
             categoryIcon = Icons.Outlined.Category
         }
     }
 
-    Surface(
-        shape = RoundedCornerShape(if (large) 16.dp else 13.dp),
-        color = backgroundColor,
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(if (large) 8.dp else 6.dp),
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = if (large) 8.dp else 6.dp, vertical = if (large) 6.dp else 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(if (large) 9.dp else 6.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(if (large) 34.dp else 24.dp)
-                    .background(Color.White.copy(alpha = 0.78f), RoundedCornerShape(if (large) 11.dp else 8.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (categoryIcon == null) {
-                    GoldIngotIcon(
-                        modifier = Modifier.size(if (large) 19.dp else 15.dp),
-                        tint = textColor,
-                    )
-                } else {
-                    Icon(
-                        imageVector = categoryIcon,
-                        contentDescription = null,
-                        modifier = Modifier.size(if (large) 19.dp else 15.dp),
-                        tint = textColor,
-                    )
-                }
-            }
-            Text(
-                text = category,
-                fontSize = if (large) 14.sp else 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = textColor,
-                maxLines = 1,
+        if (categoryIcon == null) {
+            GoldIngotIcon(
+                modifier = Modifier.size(if (large) 20.dp else 15.dp),
+                tint = textColor,
+            )
+        } else {
+            Icon(
+                imageVector = categoryIcon,
+                contentDescription = null,
+                modifier = Modifier.size(if (large) 20.dp else 15.dp),
+                tint = textColor,
             )
         }
+        Text(
+            text = category,
+            fontSize = if (large) 14.sp else 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = textColor,
+            maxLines = 1,
+        )
     }
 }
 
@@ -1160,6 +1145,7 @@ fun EditAssetHistoryDialog(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         items(historyRecords, key = { it.uid }) { historyItem ->
@@ -1946,9 +1932,10 @@ fun StatsScreen(records: List<AssetRecord>, allRecords: List<AssetRecord>) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                containerColor = Color(0xFFFCFCFD),
             ),
             shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)),
         ) {
             Column(
                 modifier = Modifier
@@ -2021,24 +2008,24 @@ fun StatsScreen(records: List<AssetRecord>, allRecords: List<AssetRecord>) {
                         .height(200.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Canvas(
-                        modifier = Modifier.size(180.dp),
-                    ) {
+                    Canvas(modifier = Modifier.size(180.dp)) {
                         var startAngle = -90f
                         val strokeWidth = 36.dp.toPx()
 
                         if (donutValueTotal > 0) {
-                            donutSlices.filter { it.value > 0 }.forEach { slice ->
-                                val sweepAngle = (slice.value.toFloat() / donutValueTotal.toFloat()) * 360f
+                            donutSlices.forEachIndexed { index, slice ->
+                                if (slice.value > 0) {
+                                    val sweepAngle = (slice.value.toFloat() / donutValueTotal.toFloat()) * 360f
 
-                                drawArc(
-                                    color = slice.color,
-                                    startAngle = startAngle,
-                                    sweepAngle = sweepAngle,
-                                    useCenter = false,
-                                    style = Stroke(width = strokeWidth, cap = StrokeCap.Butt),
-                                )
-                                startAngle += sweepAngle
+                                    drawArc(
+                                        color = slice.color,
+                                        startAngle = startAngle,
+                                        sweepAngle = sweepAngle,
+                                        useCenter = false,
+                                        style = Stroke(width = strokeWidth, cap = StrokeCap.Butt),
+                                    )
+                                    startAngle += sweepAngle
+                                }
                             }
                         }
                     }
@@ -2558,9 +2545,10 @@ fun AssetLineChartCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            containerColor = Color(0xFFFCFCFD),
         ),
         shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)),
     ) {
         Column(
             modifier = Modifier
@@ -3032,6 +3020,51 @@ fun AssetLineChartCard(
                                 paddingTop + chartHeight + 20.dp.toPx(),
                                 labelPaint,
                             )
+                        }
+                    }
+                }
+
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "표시 중인 항목",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (showTotalLine) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(16.dp)
+                                    .height(3.dp)
+                                    .background(primaryColor, RoundedCornerShape(2.dp)),
+                            )
+                            Text("전체 합계", fontSize = 12.sp, color = textColor)
+                        }
+                    }
+                    chartItems.filter { it in activeItems }.forEach { item ->
+                        val itemColor = itemColorMap[item] ?: primaryColor
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(16.dp)
+                                    .height(3.dp)
+                                    .background(itemColor, RoundedCornerShape(2.dp)),
+                            )
+                            Text("${item.category} · ${item.name}", fontSize = 12.sp, color = textColor)
                         }
                     }
                 }
